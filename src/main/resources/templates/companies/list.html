@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Kompaniyalar — Admin</title>
+    <style>
+        :root {
+            --primary: #4f46e5; --primary-dark: #4338ca; --bg: #f7f7fb;
+            --card: #ffffff; --border: #e5e7eb; --text: #1f2937;
+            --text-muted: #6b7280; --green: #16a34a; --red: #dc2626;
+            --green-bg: #dcfce7; --red-bg: #fee2e2;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            margin: 0; background: var(--bg); color: var(--text);
+        }
+        .topbar {
+            background: var(--card); border-bottom: 1px solid var(--border);
+            padding: 16px 32px; display: flex; justify-content: space-between;
+            align-items: center;
+        }
+        .topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+        .topbar .brand .dot {
+            width: 28px; height: 28px; border-radius: 8px; background: var(--primary);
+            display: inline-block;
+        }
+        .topbar a.logout { color: var(--text-muted); text-decoration: none; font-size: 14px; }
+        .topbar a.logout:hover { color: var(--red); }
+        .topbar button.logout:hover { color: #dc2626; }
+        .container { max-width: 1000px; margin: 32px auto; padding: 0 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; margin: 0; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { background: #fafafb; color: var(--text-muted); font-weight: 600; font-size: 12px;
+             text-transform: uppercase; letter-spacing: .04em; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafafb; }
+        .badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .badge.active { background: var(--green-bg); color: var(--green); }
+        .badge.inactive { background: var(--red-bg); color: var(--red); }
+        .btn { display: inline-block; padding: 7px 14px; text-decoration: none; border-radius: 8px;
+               border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 13px;
+               font-weight: 600; color: var(--text); }
+        .btn:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-dark); color: #fff; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        form.inline { display: inline; }
+        .empty { padding: 40px; text-align: center; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <div class="brand"><span class="dot"></span> Bot Boshqaruv Paneli</div>
+    <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+        <button type="submit" class="logout"
+                style="background:none; border:none; padding:0; cursor:pointer; font: inherit; color: #6b7280;">Chiqish →</button>
+    </form>
+</div>
+<div class="container">
+    <div class="header">
+        <h1>Kompaniyalar</h1>
+        <a class="btn btn-primary" th:href="@{/admin/companies/new}">+ Yangi kompaniya</a>
+    </div>
+    <div class="card">
+        <table>
+            <thead>
+            <tr>
+                <th>Nomi</th>
+                <th>Slug</th>
+                <th>Holati</th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="company : ${companies}">
+                <td th:text="${company.name}" style="font-weight: 600;"></td>
+                <td th:text="${company.slug}" style="color: var(--text-muted);"></td>
+                <td>
+                    <span class="badge active" th:if="${company.isActive()}">Faol</span>
+                    <span class="badge inactive" th:unless="${company.isActive()}">Nofaol</span>
+                </td>
+                <td>
+                    <a class="btn btn-sm" th:href="@{/admin/companies/{id}/edit(id=${company.id})}">Tahrirlash</a>
+                </td>
+                <td>
+                    <form class="inline" th:if="${company.isActive()}"
+                          th:action="@{/admin/companies/{id}/toggle(id=${company.id})}" method="post">
+                        <button type="submit" class="btn btn-sm">Deaktivatsiya</button>
+                    </form>
+                    <form class="inline" th:unless="${company.isActive()}"
+                          th:action="@{/admin/companies/{id}/toggle(id=${company.id})}" method="post">
+                        <button type="submit" class="btn btn-sm">Faollashtirish</button>
+                    </form>
+                </td>
+                <td>
+                    <form class="inline" th:unless="${company.isActive()}"
+                          th:action="@{/admin/companies/{id}/delete(id=${company.id})}" method="post"
+                          onsubmit="return confirm('Bu kompaniyani butunlay o\'chirasizmi? Bot to\'xtatiladi, ma\'lumotlar (xodimlar, murojaatlar) bazada saqlanib qoladi, lekin ro\'yxatda boshqa ko\'rinmaydi.');">
+                        <button type="submit" class="btn btn-sm" style="color:#dc2626; border-color:#dc2626;">O'chirish</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(companies)}">Hozircha kompaniyalar yo'q.</div>
+    </div>
+</div>
+</body>
+</html>
