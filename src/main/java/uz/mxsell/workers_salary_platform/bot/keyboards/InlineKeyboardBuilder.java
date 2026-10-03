@@ -63,13 +63,37 @@ public class InlineKeyboardBuilder {
         return markup;
     }
 
-    public InlineKeyboardMarkup reconciliationPdfKeyboard() {
+    public InlineKeyboardMarkup reconciliationPdfKeyboard(String dateFrom, String dateTo) {
         InlineKeyboardButton pdfButton = new InlineKeyboardButton();
         pdfButton.setText("📄 PDF yuklab olish");
-        pdfButton.setCallbackData("finance:reconciliation:pdf");
+        pdfButton.setCallbackData("finance:reconciliation:pdf:" + dateFrom + ":" + dateTo);
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(List.of(List.of(pdfButton)));
+        return markup;
+    }
+
+    public InlineKeyboardMarkup reconciliationPeriodKeyboard() {
+        InlineKeyboardButton month = new InlineKeyboardButton();
+        month.setText("📅 Bu oy");
+        month.setCallbackData("finance:reconciliation:period:MONTH");
+
+        InlineKeyboardButton days7 = new InlineKeyboardButton();
+        days7.setText("📅 So'nggi 7 kun");
+        days7.setCallbackData("finance:reconciliation:period:DAYS7");
+
+        InlineKeyboardButton days15 = new InlineKeyboardButton();
+        days15.setText("📅 So'nggi 15 kun");
+        days15.setCallbackData("finance:reconciliation:period:DAYS15");
+
+        InlineKeyboardButton days30 = new InlineKeyboardButton();
+        days30.setText("📅 So'nggi 30 kun");
+        days30.setCallbackData("finance:reconciliation:period:DAYS30");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(
+                List.of(month, days7),
+                List.of(days15, days30)));
         return markup;
     }
 

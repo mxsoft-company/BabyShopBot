@@ -137,9 +137,6 @@ public class NotificationService {
         if (r.getMachine() != null) {
             sb.append("⚙️ Stanok: ").append(escapeMarkdown(r.getMachine())).append("\n");
         }
-        if (r.getPrice() != null) {
-            sb.append("💵 Narx: ").append(escapeMarkdown(formatAmount(r.getPrice()))).append(" so'm\n");
-        }
         if (r.getDefect() != null && r.getDefect() > 0) {
             sb.append("⚠️ Brak: ").append(escapeMarkdown(formatAmount(r.getDefect()))).append("\n");
         }

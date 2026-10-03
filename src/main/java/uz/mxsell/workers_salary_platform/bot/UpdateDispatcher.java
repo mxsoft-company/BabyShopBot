@@ -130,7 +130,7 @@ public class UpdateDispatcher {
                     case "⚠️ Jarimalar" -> showPenalties(company, bot, chatId);
                     case "🧾 Soliq (NDFL)" -> showTax(company, bot, chatId);
                     case "🛒 Mahsulotlar" -> showProducts(company, bot, chatId);
-                    case "📊 Akt sverka" -> showReconciliation(company, bot, chatId);
+                    case "📊 Akt sverka" -> promptReconciliationPeriod(company, bot, chatId);
                     case "💰 Balans" -> showBalance(company, bot, chatId);
                     case "📩 Rahbariyatga murojaat" -> {
                         Employee employee = requireEmployee(company, bot, chatId);
@@ -187,8 +187,15 @@ public class UpdateDispatcher {
             handleAppealConfirm(company, bot, chatId, key);
             return;
         }
-        if ("finance:reconciliation:pdf".equals(data)) {
-            sendReconciliationPdf(company, bot, chatId);
+        if (data.startsWith("finance:reconciliation:period:")) {
+            String period = data.substring("finance:reconciliation:period:".length());
+            LocalDate[] range = resolveReconciliationPeriod(period);
+            showReconciliation(company, bot, chatId, range[0], range[1]);
+            return;
+        }
+        if (data.startsWith("finance:reconciliation:pdf:")) {
+            String[] parts = data.substring("finance:reconciliation:pdf:".length()).split(":");
+            sendReconciliationPdf(company, bot, chatId, parts[0], parts[1]);
             return;
         }
         if ("appeal:cancel".equals(data)) {
@@ -581,7 +588,30 @@ public class UpdateDispatcher {
         }
     }
 
-    private void showReconciliation(Company company, TelegramLongPollingBot bot, Long chatId)
+    private void promptReconciliationPeriod(Company company, TelegramLongPollingBot bot, Long chatId)
+            throws TelegramApiException {
+        Employee employee = requireEmployee(company, bot, chatId);
+        if (employee == null) {
+            return;
+        }
+        send(bot, chatId, "📊 Qaysi davr uchun ko'rmoqchisiz?",
+                inlineKeyboardBuilder.reconciliationPeriodKeyboard());
+    }
+
+    private LocalDate[] resolveReconciliationPeriod(String period) {
+        LocalDate now = LocalDate.now();
+        LocalDate from = switch (period) {
+            case "MONTH" -> now.withDayOfMonth(1);
+            case "DAYS7" -> now.minusDays(6);
+            case "DAYS15" -> now.minusDays(14);
+            case "DAYS30" -> now.minusDays(29);
+            default -> now.withDayOfMonth(1);
+        };
+        return new LocalDate[]{from, now};
+    }
+
+    private void showReconciliation(Company company, TelegramLongPollingBot bot, Long chatId,
+            LocalDate dateFrom, LocalDate dateTo)
             throws TelegramApiException {
         Employee employee = requireEmployee(company, bot, chatId);
         if (employee == null) {
@@ -589,12 +619,8 @@ public class UpdateDispatcher {
         }
 
         try {
-            LocalDate now = LocalDate.now();
-            String dateFrom = now.withDayOfMonth(1).toString();
-            String dateTo = now.toString();
-
             OneCReconciliationDto data = financeService.getReconciliation(
-                    company.getId(), employee.getEmployeeId1c(), dateFrom, dateTo);
+                    company.getId(), employee.getEmployeeId1c(), dateFrom.toString(), dateTo.toString());
 
             if (data == null) {
                 send(bot, chatId, "📊 Akt sverka ma'lumoti topilmadi.");
@@ -658,7 +684,8 @@ public class UpdateDispatcher {
                 }
             }
 
-            send(bot, chatId, sb.toString(), inlineKeyboardBuilder.reconciliationPdfKeyboard());
+            send(bot, chatId, sb.toString(),
+                    inlineKeyboardBuilder.reconciliationPdfKeyboard(dateFrom.toString(), dateTo.toString()));
         } catch (OneCCommunicationException | ResourceAccessException e) {
             log.error("1C communication error (reconciliation) for company {}: {}",
                     company.getId(), e.getMessage(), e);
@@ -666,7 +693,8 @@ public class UpdateDispatcher {
         }
     }
 
-    private void sendReconciliationPdf(Company company, TelegramLongPollingBot bot, Long chatId)
+    private void sendReconciliationPdf(Company company, TelegramLongPollingBot bot, Long chatId,
+            String dateFrom, String dateTo)
             throws TelegramApiException {
         Employee employee = requireEmployee(company, bot, chatId);
         if (employee == null) {
@@ -674,9 +702,6 @@ public class UpdateDispatcher {
         }
 
         try {
-            LocalDate now = LocalDate.now();
-            String dateFrom = now.withDayOfMonth(1).toString();
-            String dateTo = now.toString();
             OneCReconciliationDto data = financeService.getReconciliation(
                     company.getId(), employee.getEmployeeId1c(), dateFrom, dateTo);
             if (data == null) {
